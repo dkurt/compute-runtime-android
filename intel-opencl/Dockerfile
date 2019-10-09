@@ -55,7 +55,6 @@ RUN mkdir -p build_native_igc && cd build_native_igc && \
 RUN apt-get install -y pkg-config
 
 # Compile native ocloc
-RUN apt-get update
 RUN cd runtime && mkdir build_ocloc && cd build_ocloc && \
     cmake \
       -DCMAKE_BUILD_TYPE=Release \

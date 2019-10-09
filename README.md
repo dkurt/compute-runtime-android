@@ -7,9 +7,12 @@ Use provided instructions or built binaries at your own risk.
 
 Official repository: https://github.com/intel/compute-runtime
 
+Download runtime: https://drive.google.com/file/d/1aHYrcgOA0mlfmE40NpbbCgXHmp5sTz5h/view?usp=sharing
+
 ## Build instructions
 
 1. Build in Docker:
+
   ```bash
   docker build -t intel-opencl intel-opencl
   ```
@@ -35,5 +38,5 @@ Official repository: https://github.com/intel/compute-runtime
 
 3. On device
 
-  1. Create a folder `/system/vendor/Khronos/OpenCL/vendors/` and copy `intel.icd` to it.
-  2. Make sure that the rest of `*.so` libraries are in `LD_LIBRARY_PATH`.
+  * Create a folder `/system/vendor/Khronos/OpenCL/vendors/` and copy `intel.icd` to it.
+  * Make sure that the rest of `*.so` libraries are in `LD_LIBRARY_PATH`.
