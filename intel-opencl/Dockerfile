@@ -14,20 +14,20 @@ RUN apt-get update && \
 RUN git config --global user.email "you@example.com" && \
     git config --global user.name "Your Name"
 
+# Download NDK
+RUN wget https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip && \
+    unzip android-ndk-r20-linux-x86_64.zip && \
+    rm android-ndk-r20-linux-x86_64.zip
+
 # Clone repositories
-RUN git clone -b fix_android https://github.com/dkurt/intel-graphics-compiler igc && \
+RUN git clone https://github.com/intel/intel-graphics-compiler igc --depth 1 && \
     git clone -b android_fix https://github.com/dkurt/gmmlib --depth 1 && \
-    mkdir runtime && cd runtime && git clone -b fix_android https://github.com/dkurt/compute-runtime --depth 1 && cd .. && \
+    mkdir runtime && cd runtime && git clone -b fix_android https://github.com/dkurt/compute-runtime && cd compute-runtime && git checkout e3b0dfe && cd ../.. && \
     git clone -b release/9.x https://github.com/llvm/llvm-project llvm-project --depth 1 && \
     git clone -b ocl-open-90 https://github.com/intel/opencl-clang llvm-project/llvm/projects/opencl-clang --depth 1 && \
     git clone -b llvm_release_90 https://github.com/KhronosGroup/SPIRV-LLVM-Translator llvm-project/llvm/projects/llvm-spirv --depth 1 && \
     git clone https://github.com/intel/llvm-patches llvm_patches --depth 1 && \
     mv llvm-project/clang llvm-project/llvm/tools/
-
-# Download NDK
-RUN wget https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip && \
-    unzip android-ndk-r20-linux-x86_64.zip && \
-    rm android-ndk-r20-linux-x86_64.zip
 
 # Compile native gmmlib (need for ocloc)
 RUN cd gmmlib && mkdir build && cd build && \
@@ -73,15 +73,11 @@ RUN cd /runtime/build && cp /runtime/build_ocloc/bin/ocloc ./bin && \
 
 # Apply patches
 RUN sed -i -E 's|linux_resource_linker|/build_native_igc/IGC/llvm/build/src/bin/linux_resource_linker|' llvm-project/llvm/projects/opencl-clang/cl_headers/CMakeLists.txt && \
-    sed -i -E 's|target_link_libraries\(IGA_EXE PUBLIC IGA_SLIB "-lrt"\)|target_link_libraries\(IGA_EXE PUBLIC IGA_SLIB\)|' igc/visa/iga/IGAExe/CMakeLists.txt && \
-    sed -i -E 's|-lrt|\n|' igc/IGC/CMakeLists.txt && \
-    sed -i -E 's|target_link_libraries\(GenX_IR_Exe rt dl\)|target_link_libraries\(GenX_IR_Exe dl\)|' igc/visa/CMakeLists.txt && \
     sed -i -E 's|llvm-tblgen|/build_native_igc/IGC/llvm/build/src/bin/llvm-tblgen|' llvm-project/llvm/projects/opencl-clang/CMakeLists.txt && \
     sed -i -E 's|UNIX|UNIX OR ANDROID|' igc/IGC/BiFModule/CMakeLists.txt && \
     sed -i -E 's|COMMAND clang-tool|COMMAND /build_native_igc/IGC/llvm/build/src/bin/clang|' igc/IGC/BiFModule/CMakeLists.txt && \
     sed -i -E 's|DEPENDS clang-tool|DEPENDS /build_native_igc/IGC/llvm/build/src/bin/clang|' igc/IGC/BiFModule/CMakeLists.txt && \
-    sed -i -E 's|COMMAND llvm-link|COMMAND /build_native_igc/IGC/llvm/build/src/bin/llvm-link|' igc/IGC/BiFModule/CMakeLists.txt && \
-    sed -i -E 's|\$<TARGET_FILE:\$\{IGC_BUILD__PROJ__ElfPackager\}> -includeSizet -funcList \$\{CMAKE_CURRENT_SOURCE_DIR\}/function_bin.txt \$\{IGC_BUILD__BIF_DIR\}/OCLBiFImpl.bc \$\{IGC_BUILD__BIF_DIR\}/igdclbif.bin|echo 1|' igc/IGC/ElfPackager/CMakeLists.txt
+    sed -i -E 's|COMMAND llvm-link|COMMAND /build_native_igc/IGC/llvm/build/src/bin/llvm-link|' igc/IGC/BiFModule/CMakeLists.txt
 
 RUN mkdir build && cd build && \
     mkdir -p NATIVE/bin && \
@@ -95,7 +91,7 @@ RUN mkdir build && cd build && \
     ../igc && make -j$(nproc) fcl_dll igc_dll
 
 
-# Compile gmmlinb for Android
+# Compile gmmlib for Android
 RUN cd gmmlib && mkdir build_android && cd build_android && \
     cmake \
       -DCMAKE_BUILD_TYPE=Release \
