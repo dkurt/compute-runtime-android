@@ -3,7 +3,6 @@ FROM ubuntu:18.04
 RUN apt-get update && \
     apt-get install -y \
         git \
-        cmake \
         wget \
         unzip \
         bison \
@@ -14,14 +13,20 @@ RUN apt-get update && \
 RUN git config --global user.email "you@example.com" && \
     git config --global user.name "Your Name"
 
+# Install CMake
+RUN wget --quiet https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz && \
+    tar -xf cmake*.tar.gz
+ENV PATH=/cmake-3.18.0-Linux-x86_64/bin:$PATH
+
 # Download NDK
-RUN wget https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip && \
-    unzip android-ndk-r20-linux-x86_64.zip && \
+RUN wget --quiet https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip && \
+    unzip -q android-ndk-r20-linux-x86_64.zip && \
     rm android-ndk-r20-linux-x86_64.zip
 
 # Clone repositories
 RUN git clone https://github.com/intel/intel-graphics-compiler igc --depth 1 && \
     git clone https://github.com/intel/gmmlib --depth 1 && \
+    git clone https://github.com/intel/vc-intrinsics --depth 1 && \
     mkdir runtime && cd runtime && git clone -b fix_android https://github.com/dkurt/compute-runtime && cd compute-runtime && git checkout e3b0dfe && cd ../.. && \
     git clone -b release/9.x https://github.com/llvm/llvm-project llvm-project --depth 1 && \
     git clone -b ocl-open-90 https://github.com/intel/opencl-clang llvm-project/llvm/projects/opencl-clang --depth 1 && \
@@ -32,13 +37,13 @@ RUN git clone https://github.com/intel/intel-graphics-compiler igc --depth 1 && 
 # Compile native gmmlib (need for ocloc)
 RUN cd gmmlib && mkdir build && cd build && \
     cmake -DCMAKE_BUILD_TYPE=Release .. && \
-    make -j$(nproc) install
+    make -j$(nproc --all) install
 
 # Compile native IGC (need for ocloc)
 RUN mkdir -p build_native_igc && cd build_native_igc && \
     cmake \
         -DCMAKE_BUILD_TYPE=Release \
-    ../igc && make -j$(nproc) install
+    ../igc/ && make -j$(nproc --all) install
 
 #
 # Build compute runtime (libigdfcl.so + libigc.so + intel.icd)
@@ -53,7 +58,7 @@ RUN cd runtime && mkdir build_ocloc && cd build_ocloc && \
       -DCMAKE_BUILD_TYPE=Release \
       -DSKIP_ALL_ULT=ON \
       -DSKIP_UNIT_TESTS=ON ../compute-runtime && \
-      make -j$(nproc) ocloc
+      make -j$(nproc --all) ocloc
 
 # First build will show you "ocloc: not found" error which is OK.
 RUN cd runtime && mkdir build && cd build && \
@@ -63,9 +68,9 @@ RUN cd runtime && mkdir build && cd build && \
       -DANDROID_ABI=x86_64 \
       -DSKIP_ALL_ULT=ON \
       -DSKIP_UNIT_TESTS=ON ../compute-runtime && \
-    make -j$(nproc); exit 0
+    make -j$(nproc --all); exit 0
 RUN cd /runtime/build && cp /runtime/build_ocloc/bin/ocloc ./bin && \
-    make -j$(nproc)
+    make -j$(nproc --all)
 
 #
 # Cross compile IGC
@@ -88,7 +93,7 @@ RUN mkdir build && cd build && \
         -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20/build/cmake/android.toolchain.cmake \
         -DANDROID_ABI=x86_64 \
         -DCMAKE_CXX_FLAGS="-Wno-macro-redefined -Wno-user-defined-warnings -Wno-deprecated" \
-    ../igc && make -j$(nproc) fcl_dll igc_dll
+    ../igc && make -j$(nproc --all) fcl_dll igc_dll
 
 
 # Compile gmmlib for Android
@@ -98,7 +103,7 @@ RUN cd gmmlib && mkdir build_android && cd build_android && \
       -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20/build/cmake/android.toolchain.cmake \
       -DANDROID_ABI=x86_64 \
       -DRUN_TEST_SUITE=OFF .. && \
-    make -j$(nproc)
+    make -j$(nproc --all)
 
 RUN git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader icd --depth 1 && \
     cd icd && \
@@ -108,7 +113,7 @@ RUN git clone https://github.com/KhronosGroup/OpenCL-ICD-Loader icd --depth 1 &&
       -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_TOOLCHAIN_FILE=../android-ndk-r20/build/cmake/android.toolchain.cmake \
       -DANDROID_ABI=x86_64 .. && \
-    make -j$(nproc)
+    make -j$(nproc --all)
 
 # Collect the binaries
 RUN mkdir ocl && cd ocl && \

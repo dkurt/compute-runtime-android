@@ -1,0 +1,81 @@
+language: cpp
+
+notifications:
+  email: false
+
+sudo: true
+
+os: linux
+dist: bionic
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install -y unzip
+  - sudo apt-get remove pkg-config
+
+  # Download NDK
+  - cd ~/
+  - wget https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip
+  - unzip -q android-ndk-r20-linux-x86_64.zip
+  - rm android-ndk-r20-linux-x86_64.zip
+
+  # Install CMake
+  - wget https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz
+  - tar -xf cmake*.tar.gz
+  - export PATH=$(realpath ./cmake-3.18.0-Linux-x86_64/bin):$PATH
+
+jobs:
+  include:
+    script:
+      # Clone repositories
+      - git clone https://github.com/intel/intel-graphics-compiler igc --depth 1
+      - git clone https://github.com/intel/gmmlib --depth 1
+      - git clone https://github.com/intel/vc-intrinsics --depth 1
+      - mkdir runtime && cd runtime && git clone -b fix_android https://github.com/dkurt/compute-runtime && cd compute-runtime && git checkout e3b0dfe && cd ../..
+      - git clone -b release/9.x https://github.com/llvm/llvm-project llvm-project --depth 1
+      - git clone -b ocl-open-90 https://github.com/intel/opencl-clang llvm-project/llvm/projects/opencl-clang --depth 1
+      - git clone -b llvm_release_90 https://github.com/KhronosGroup/SPIRV-LLVM-Translator llvm-project/llvm/projects/llvm-spirv --depth 1
+      - git clone https://github.com/intel/llvm-patches llvm_patches --depth 1
+      - mv llvm-project/clang llvm-project/llvm/tools/
+
+    script:
+      # Compile native gmmlib (need for ocloc)
+      - mkdir ~/build_gmmlib && cd ~/build_gmmlib
+      - cmake -DCMAKE_BUILD_TYPE=Release ~/gmmlib
+      - sudo make -j$(nproc --all) install
+
+    script:
+      # Compile native IGC (need for ocloc)
+      - mkdir ~/build_native_igc && cd ~/build_native_igc
+      - cmake -DCMAKE_BUILD_TYPE=Release ~/igc
+      - sudo make -j$(nproc --all) install
+
+    script:
+      #
+      # Build compute runtime (libigdfcl.so + libigc.so + intel.icd)
+      #
+
+      # NOTE: Install pkg-config only after native IGC installation.
+      - sudo apt-get install -y pkg-config
+
+      # Compile native ocloc
+      - mkdir ~/build_ocloc && cd ~/build_ocloc
+      - cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DSKIP_ALL_ULT=ON \
+          -DSKIP_UNIT_TESTS=ON ~/runtime/compute-runtime
+      - make -j$(nproc --all) ocloc
+
+  # # First build will show you "ocloc: not found" error which is OK.
+  # - mkdir build_runtime && cd build_runtime && \
+  #     cmake \
+  #       -DCMAKE_BUILD_TYPE=Release \
+  #       -DCMAKE_TOOLCHAIN_FILE=/android-ndk-r20/build/cmake/android.toolchain.cmake \
+  #       -DANDROID_ABI=x86_64 \
+  #       -DSKIP_ALL_ULT=ON \
+  #       -DSKIP_UNIT_TESTS=ON ../compute-runtime && \
+  #     make -j$(nproc --all); exit 0
+  # RUN cd /runtime/build && cp /runtime/build_ocloc/bin/ocloc ./bin && \
+  #     make -j$(nproc --all)
+
+
