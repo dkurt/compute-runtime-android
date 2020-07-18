@@ -3,7 +3,6 @@ FROM ubuntu:18.04
 RUN apt-get update && \
     apt-get install -y \
         git \
-        cmake \
         wget \
         unzip \
         bison \
@@ -14,14 +13,20 @@ RUN apt-get update && \
 RUN git config --global user.email "you@example.com" && \
     git config --global user.name "Your Name"
 
+# Install CMake
+RUN wget --quiet https://github.com/Kitware/CMake/releases/download/v3.18.0/cmake-3.18.0-Linux-x86_64.tar.gz && \
+    tar -xf cmake*.tar.gz
+ENV PATH=/cmake-3.18.0-Linux-x86_64/bin:$PATH
+
 # Download NDK
-RUN wget https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip && \
-    unzip android-ndk-r20-linux-x86_64.zip && \
+RUN wget --quiet https://dl.google.com/android/repository/android-ndk-r20-linux-x86_64.zip && \
+    unzip -q android-ndk-r20-linux-x86_64.zip && \
     rm android-ndk-r20-linux-x86_64.zip
 
 # Clone repositories
 RUN git clone https://github.com/intel/intel-graphics-compiler igc --depth 1 && \
     git clone https://github.com/intel/gmmlib --depth 1 && \
+    git clone https://github.com/intel/vc-intrinsics --depth 1 && \
     mkdir runtime && cd runtime && git clone -b fix_android https://github.com/dkurt/compute-runtime && cd compute-runtime && git checkout e3b0dfe && cd ../.. && \
     git clone -b release/9.x https://github.com/llvm/llvm-project llvm-project --depth 1 && \
     git clone -b ocl-open-90 https://github.com/intel/opencl-clang llvm-project/llvm/projects/opencl-clang --depth 1 && \
