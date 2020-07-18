@@ -1,5 +1,7 @@
 # Intel(R) Graphics Compute Runtime for OpenCL(TM) for Android(TM)
 
+[![CI](https://github.com/dkurt/compute-runtime-android/workflows/CI/badge.svg?branch=master)](https://github.com/dkurt/compute-runtime-android/actions?query=branch%3Amaster)
+
 This repository contains building instructions for Intel's OpenCL for Android x86 OS (64 bit).
 
 **NOTE**: This is a temporal experimental repository in a preview state.
