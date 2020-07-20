@@ -24,7 +24,7 @@ RUN wget --quiet https://dl.google.com/android/repository/android-ndk-r20-linux-
     rm android-ndk-r20-linux-x86_64.zip
 
 # Clone repositories
-RUN git clone https://github.com/intel/intel-graphics-compiler igc --depth 1 && \
+RUN git clone -b igc-1.0.3151 https://github.com/intel/intel-graphics-compiler igc --depth 1 && \
     git clone https://github.com/intel/gmmlib --depth 1 && \
     git clone https://github.com/intel/vc-intrinsics --depth 1 && \
     mkdir runtime && cd runtime && git clone -b fix_android https://github.com/dkurt/compute-runtime && cd compute-runtime && git checkout e3b0dfe && cd ../.. && \
