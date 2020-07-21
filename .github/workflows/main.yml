@@ -27,3 +27,11 @@ jobs:
     # Runs a single command using the runners shell
     - name: Build
       run: docker build -t intel-opencl intel-opencl
+
+    - name: Copy binaries
+      run: docker run -v $(pwd):/mnt intel-opencl cp /ocl/intel-opencl-android-x86_64.tar.gz /mnt
+
+    - uses: actions/upload-artifact@v2
+      with:
+        name: intel-opencl-android-x86_64.tar.gz
+        path: intel-opencl-android-x86_64.tar.gz

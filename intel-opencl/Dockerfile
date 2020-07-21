@@ -125,4 +125,4 @@ RUN mkdir ocl && cd ocl && \
        /runtime/build/bin/libigdrcl.so . && \
     /android-ndk-r20/toolchains/llvm/prebuilt/linux-x86_64/x86_64-linux-android/bin/strip * && \
     echo "libigdrcl.so" > intel.icd && \
-    tar -cvzf intel-opencl.tar.gz *
+    tar -cvzf intel-opencl-android-x86_64.tar.gz *

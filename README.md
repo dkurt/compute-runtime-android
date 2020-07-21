@@ -19,24 +19,13 @@ Download runtime: https://drive.google.com/file/d/1uJr2oq33FAchpF4j8LmVHkai7Izhr
   docker build -t intel-opencl intel-opencl
   ```
 
-2. Copy the binaries
+2. Copy the binaries:
 
-  Create container
   ```bash
-  docker run intel-opencl
+  docker run -v $(pwd):/mnt intel-opencl cp /ocl/intel-opencl-android-x86_64.tar.gz /mnt
   ```
 
-  Check container ID
-  ```bash
-  $ docker container ls --all
-  CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS                       PORTS               NAMES
-310ebb294f49        intel-opencl        "/bin/bash"              15 seconds ago      Exited (0) 13 seconds ago                        goofy_snyder0
-  ```
-
-  Copy the binaries
-  ```bash
-  docker cp 310ebb294f49:/ocl/intel-opencl.tar.gz ./
-  ```
+  You will find an archive in a current working directory.
 
 3. On device
 
